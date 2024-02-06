@@ -1,0 +1,29 @@
+version: '3.8'
+services:
+    rabbitmq:
+        image: rabbitmq:3.10.7-management
+        ports:
+            - "5672:5672"
+            - "15672:15672"
+        hostname: rabbitmq
+        restart: always
+        environment:
+            - RABBITMQ_DEFAULT_USER=rmuser
+            - RABBITMQ_DEFAULT_PASS=rmpassword
+            - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit log_levels [{connection,error},{default,error}] disk_free_limit 2147483648
+        volumes:
+            - ./rabbitmq:/var/lib/rabbitmq
+        networks:
+            - rabbit
+    colonel:
+        build:
+            context: ./
+        restart: always
+        ports:
+            - '8888:8000'
+        networks:
+            - rabbit
+networks:
+    rabbit:
+        name: common
+        # external: true
