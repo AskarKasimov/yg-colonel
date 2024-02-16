@@ -1,11 +1,13 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
-	"math/rand"
+	"net/http"
 
-	"github.com/streadway/amqp"
+	docs "github.com/askarkasimov/yg-colonel/docs"
+	"github.com/gin-gonic/gin"
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func handleError(err error, msg string) {
@@ -15,40 +17,45 @@ func handleError(err error, msg string) {
 
 }
 
-type AddTask struct {
-	Number1 int
-	Number2 int
+type Expression struct {
+	Vanilla string
+	Answer  string
+}
+
+// @BasePath /api/v1
+
+// PingExample godoc
+// @Summary ping example
+// @Schemes
+// @Description do ping
+// @Tags example
+// @Accept json
+// @Produce json
+// @Success 200 {string} Helloworld
+// @Router /example/helloworld [get]
+func ProvideCalculation(g *gin.Context) {
+	g.JSON(http.StatusOK, "helloworld")
+}
+
+func AddExpression(g *gin.Context) {
+
 }
 
 func main() {
-	conn, err := amqp.Dial("amqp://rmuser:rmpassword@rabbitmq/")
-	handleError(err, "Can't connect to AMQP")
-	defer conn.Close()
+	r := gin.Default()
+	docs.SwaggerInfo.BasePath = "/api/v1"
+	v1 := r.Group("/api/v1")
+	{
+		expression := v1.Group("/expression")
+		{
+			expression.POST("/add", AddExpression)
+		}
 
-	amqpChannel, err := conn.Channel()
-	handleError(err, "Can't create a amqpChannel")
-
-	defer amqpChannel.Close()
-
-	queue, err := amqpChannel.QueueDeclare("add", true, false, false, false, nil)
-	handleError(err, "Could not declare `add` queue")
-
-	addTask := AddTask{Number1: rand.Intn(999), Number2: rand.Intn(999)}
-	body, err := json.Marshal(addTask)
-	if err != nil {
-		handleError(err, "Error encoding JSON")
+		worker := v1.Group("/worker")
+		{
+			worker.GET("/want_to_calculate", ProvideCalculation)
+		}
 	}
-
-	err = amqpChannel.Publish("", queue.Name, false, false, amqp.Publishing{
-		DeliveryMode: amqp.Persistent,
-		ContentType:  "text/plain",
-		Body:         body,
-	})
-
-	if err != nil {
-		log.Fatalf("Error publishing message: %s", err)
-	}
-
-	log.Printf("AddTask: %d+%d", addTask.Number1, addTask.Number2)
-
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+	r.Run(":8080")
 }
