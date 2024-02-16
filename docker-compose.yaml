@@ -1,24 +1,26 @@
 version: '3.8'
 services:
     postgres:
-    image: postgres
-    environment:
-        POSTGRES_DB: "yg"
-        POSTGRES_USER: "admin"
-        POSTGRES_PASSWORD: "admin"
-    volumes:
-        - ./init-sql:/docker-entrypoint-initdb.d
-    ports:
-        - "5432:5432"
+        image: postgres
+        environment:
+            POSTGRES_DB: "yg"
+            POSTGRES_USER: "admin"
+            POSTGRES_PASSWORD: "admin"
+        volumes:
+            - ./init-sql:/docker-entrypoint-initdb.d
+        ports:
+            - "5432:5432"
+        networks:
+            - yg
     colonel:
         build:
             context: ./
         restart: always
         ports:
-            - "8888:8080"
+            - "8080:8080"
         networks:
-            - rabbit
+            - yg
 networks:
-    rabbit:
+    yg:
         name: common
         # external: true
