@@ -8,7 +8,7 @@ import (
 )
 
 type iDatabase interface {
-	GetAvailableExpression() (models.Expression, error)
+	GetOneAvailableExpression() (models.Expression, error)
 	AddExpression(e models.ExpressionAdding) (int64, error)
 	AllExpressions() ([]models.Expression, error)
 }
@@ -30,6 +30,7 @@ func init() {
 	db = &database{db: newConn}
 }
 
+// adding expression and giving its id back
 func (d *database) AddExpression(e models.ExpressionAdding) (int64, error) {
 	var id int64 = 0
 	err := d.db.QueryRow("INSERT INTO expressions (vanilla) VALUES ($1) RETURNING id", e.Expression).Scan(&id)
@@ -40,10 +41,13 @@ func (d *database) AddExpression(e models.ExpressionAdding) (int64, error) {
 	return id, nil
 }
 
-func (d *database) GetAvailableExpression() (models.Expression, error) {
+// taking the oldest untaken expression
+func (d *database) GetOneAvailableExpression() (models.Expression, error) {
 	var expression models.Expression
 
-	err := d.db.QueryRow("SELECT id, extract(epoch from incomingDate)::INT, vanilla, answer, progress FROM expressions WHERE progress='waiting' ORDER BY incomingDate LIMIT 1").Scan(&expression.Id, &expression.Vanilla)
+	err := d.db.QueryRow(
+		"SELECT id, extract(epoch from incomingDate)::INT, vanilla, answer, progress FROM expressions WHERE progress='waiting' ORDER BY incomingDate LIMIT 1").Scan(
+		&expression.Id, &expression.IncomingDate, &expression.Vanilla, &expression.Answer, &expression.Progress)
 	if err != nil {
 		return models.Expression{}, err
 	}
@@ -51,10 +55,11 @@ func (d *database) GetAvailableExpression() (models.Expression, error) {
 	return expression, nil
 }
 
+// just taking all expressions (untaken first)
 func (d *database) AllExpressions() ([]models.Expression, error) {
 	var expressions []models.Expression
 
-	rows, err := d.db.Query("SELECT id, extract(epoch from incomingDate)::INT, vanilla, answer, progress FROM expressions ORDER BY progress")
+	rows, err := d.db.Query("SELECT id, extract(epoch from incomingDate)::INT, vanilla, answer, progress FROM expressions ORDER BY progress DESC")
 	if err != nil {
 		return nil, err
 	}

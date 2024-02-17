@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"database/sql"
 	"net/http"
 
 	"github.com/askarkasimov/yg-colonel/db"
@@ -12,24 +12,22 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func handleError(err error, msg string) {
-	if err != nil {
-		log.Fatalf("%s: %s", msg, err)
-	}
-
-}
-
 // @BasePath /api/v1
 
 // @Summary One available expression for worker
 // @Tags worker
 // @Success 200 {object} models.Expression
-// @Failure 404 {object} models.Error
+// @Failure 404 {object} models.Error "no rows now"
+// @Failure 500 {object} models.Error "unprocessed error"
 // @Router /worker/want_to_calculate [get]
 func ProvideCalculation(g *gin.Context) {
-	expression, err := db.DB().GetAvailableExpression()
+	expression, err := db.DB().GetOneAvailableExpression()
+	if err == sql.ErrNoRows {
+		g.JSON(http.StatusNotFound, models.Error{ErrorMessage: err.Error()})
+		return
+	}
 	if err != nil {
-		g.JSON(http.StatusInternalServerError, models.Error{Message: err.Error()})
+		g.JSON(http.StatusInternalServerError, models.Error{ErrorMessage: err.Error()})
 		return
 	}
 
@@ -41,18 +39,20 @@ func ProvideCalculation(g *gin.Context) {
 // @Accept json
 // @Param expression body models.ExpressionAdding true "expression to calculate"
 // @Success 200 {string} string "id of just created expression"
-// @Failure 404 {object} models.Error
+// @Failure 400 {object} models.Error "incorrect body"
+// @Failure 500 {object} models.Error "unprocessed error"
 // @Router /expression/add [post]
 func AddExpression(g *gin.Context) {
 	var req models.ExpressionAdding
+
 	if err := g.ShouldBindJSON(&req); err != nil {
-		g.JSON(http.StatusBadRequest, models.Error{Message: err.Error()})
+		g.JSON(http.StatusBadRequest, models.Error{ErrorMessage: err.Error()})
 		return
 	}
 
 	id, err := db.DB().AddExpression(req)
 	if err != nil {
-		g.JSON(http.StatusInternalServerError, models.Error{Message: err.Error()})
+		g.JSON(http.StatusInternalServerError, models.Error{ErrorMessage: err.Error()})
 		return
 	}
 
@@ -62,12 +62,18 @@ func AddExpression(g *gin.Context) {
 // @Summary Get all expressions
 // @Tags expression
 // @Success 200 {object} []models.Expression
-// @Failure 500 {object} models.Error
+// @Failure 500 {object} models.Error "unprocessed error"
 // @Router /expression/all [get]
 func AllExpressions(g *gin.Context) {
 	expressions, err := db.DB().AllExpressions()
+
 	if err != nil {
-		g.JSON(http.StatusInternalServerError, models.Error{Message: err.Error()})
+		g.JSON(http.StatusInternalServerError, models.Error{ErrorMessage: err.Error()})
+		return
+	}
+
+	if expressions == nil {
+		g.JSON(http.StatusOK, []models.Expression{})
 		return
 	}
 

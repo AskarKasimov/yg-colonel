@@ -1,0 +1,92 @@
+basePath: /api/v1
+definitions:
+  models.Error:
+    properties:
+      errorMessage:
+        type: string
+    type: object
+  models.Expression:
+    properties:
+      answer:
+        type: string
+      id:
+        type: integer
+      incomingDate:
+        type: integer
+      progress:
+        type: string
+      vanilla:
+        type: string
+    type: object
+  models.ExpressionAdding:
+    properties:
+      expression:
+        type: string
+    required:
+    - expression
+    type: object
+info:
+  contact: {}
+paths:
+  /expression/add:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: expression to calculate
+        in: body
+        name: expression
+        required: true
+        schema:
+          $ref: '#/definitions/models.ExpressionAdding'
+      responses:
+        "200":
+          description: id of just created expression
+          schema:
+            type: string
+        "400":
+          description: incorrect body
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: unprocessed error
+          schema:
+            $ref: '#/definitions/models.Error'
+      summary: Add an expression
+      tags:
+      - expression
+  /expression/all:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Expression'
+            type: array
+        "500":
+          description: unprocessed error
+          schema:
+            $ref: '#/definitions/models.Error'
+      summary: Get all expressions
+      tags:
+      - expression
+  /worker/want_to_calculate:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Expression'
+        "404":
+          description: no rows now
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: unprocessed error
+          schema:
+            $ref: '#/definitions/models.Error'
+      summary: One available expression for worker
+      tags:
+      - worker
+swagger: "2.0"

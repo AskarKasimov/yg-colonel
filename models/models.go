@@ -1,7 +1,7 @@
 package models
 
 type Error struct {
-	Message string `json:"message"`
+	ErrorMessage string `json:"errorMessage"`
 }
 
 type ExpressionAdding struct {
