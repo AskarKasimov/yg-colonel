@@ -82,6 +82,82 @@ const docTemplate = `{
                 }
             }
         },
+        "/worker/heartbeat": {
+            "post": {
+                "tags": [
+                    "worker"
+                ],
+                "summary": "Handling heartbeats",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Expression"
+                        }
+                    },
+                    "400": {
+                        "description": "parsing ID error",
+                        "schema": {
+                            "$ref": "#/definitions/models.Error"
+                        }
+                    },
+                    "404": {
+                        "description": "no worker with such ID",
+                        "schema": {
+                            "$ref": "#/definitions/models.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "unprocessed error",
+                        "schema": {
+                            "$ref": "#/definitions/models.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/worker/register": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "worker"
+                ],
+                "summary": "Registrating worker in orchestrator",
+                "parameters": [
+                    {
+                        "description": "expression to calculate",
+                        "name": "expression",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ExpressionAdding"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "id of just created expression",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "incorrect body",
+                        "schema": {
+                            "$ref": "#/definitions/models.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "unprocessed error",
+                        "schema": {
+                            "$ref": "#/definitions/models.Error"
+                        }
+                    }
+                }
+            }
+        },
         "/worker/want_to_calculate": {
             "get": {
                 "tags": [
