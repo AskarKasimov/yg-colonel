@@ -38,3 +38,5 @@ docker-compose up --build
 При желании можно не уделять отдельное внимание настройке переменных окружения, ведь они изначально неплохо подготовлены)
 
 p.s. описаны они в docker-compose.yaml
+
+Подготовлен Frontend на http://localhost:8080, а также есть и Swagger на http://localhost:8080/swagger/index.html
