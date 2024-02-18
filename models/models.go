@@ -1,5 +1,7 @@
 package models
 
+import "database/sql"
+
 type Error struct {
 	ErrorMessage string `json:"errorMessage"`
 }
@@ -19,6 +21,15 @@ type Expression struct {
 	Vanilla      string `json:"vanilla"`
 	Answer       string `json:"answer"`
 	Progress     string `json:"progress"`
+}
+
+type ExpressionGeneral struct {
+	Id           int64          `json:"id"`
+	IncomingDate int64          `json:"incomingDate"`
+	Vanilla      string         `json:"vanilla"`
+	Answer       string         `json:"answer"`
+	Progress     string         `json:"progress"`
+	WorkerName   sql.NullString `json:"workerName"`
 }
 
 type WorkerAdding struct {

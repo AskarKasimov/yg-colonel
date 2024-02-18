@@ -10,7 +10,7 @@ import (
 type iDatabase interface {
 	GetOneAvailableExpression(workerId int64) (models.Expression, error)
 	AddExpression(e models.ExpressionAdding) (int64, error)
-	AllExpressions() ([]models.Expression, error)
+	AllExpressions() ([]models.ExpressionGeneral, error)
 	IsWorkerAlive(workerId int64) (bool, error)
 	WakeUp(workerId int64) error
 	GetWorkerIdByName(name string) (int64, error)
@@ -21,6 +21,7 @@ type iDatabase interface {
 	MakeExpressionAvailableAgain(expressionId int64) error
 	SolveExpression(workerId, expressionId int64, solution string) error
 	GetExpressionById(expressionId int64) (models.Expression, error)
+	AllWorkers() ([]models.Worker, error)
 }
 
 type database struct {
@@ -234,18 +235,18 @@ func (d *database) SolveExpression(workerId, expressionId int64, solution string
 }
 
 // just taking all expressions (untaken first)
-func (d *database) AllExpressions() ([]models.Expression, error) {
-	var expressions []models.Expression
+func (d *database) AllExpressions() ([]models.ExpressionGeneral, error) {
+	var expressions []models.ExpressionGeneral
 
-	rows, err := d.db.Query("SELECT id, extract(epoch from incomingDate)::INT, vanilla, answer, progress FROM expressions ORDER BY progress DESC")
+	rows, err := d.db.Query("SELECT expressions.id, extract(epoch from expressions.incomingDate)::INT, expressions.vanilla, expressions.answer, expressions.progress, workers.name FROM expressions LEFT JOIN workers_and_expressions ON workers_and_expressions.expressionId=expressions.id LEFT JOIN workers ON workers_and_expressions.workerId=workers.id ORDER BY expressions.progress DESC")
 	if err != nil {
 		return nil, err
 	}
 
 	for rows.Next() {
-		var expression models.Expression
+		var expression models.ExpressionGeneral
 
-		err = rows.Scan(&expression.Id, &expression.IncomingDate, &expression.Vanilla, &expression.Answer, &expression.Progress)
+		err = rows.Scan(&expression.Id, &expression.IncomingDate, &expression.Vanilla, &expression.Answer, &expression.Progress, &expression.WorkerName)
 		if err != nil {
 			return nil, err
 		}
@@ -263,4 +264,26 @@ func (d *database) GetExpressionById(expressionId int64) (models.Expression, err
 		return models.Expression{}, err
 	}
 	return expression, nil
+}
+
+func (d *database) AllWorkers() ([]models.Worker, error) {
+	var workers []models.Worker
+
+	rows, err := d.db.Query("SELECT id, name, isAlive, extract(epoch from lastHeartbeat)::INT FROM workers")
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var worker models.Worker
+
+		err = rows.Scan(&worker.Id, &worker.Name, &worker.IsAlive, &worker.LastHeartbeat)
+		if err != nil {
+			return nil, err
+		}
+
+		workers = append(workers, worker)
+	}
+
+	return workers, nil
 }

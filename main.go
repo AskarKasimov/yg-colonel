@@ -169,7 +169,7 @@ func AllExpressions(g *gin.Context) {
 	}
 
 	if expressions == nil {
-		g.JSON(http.StatusOK, []models.Expression{})
+		g.JSON(http.StatusOK, []models.ExpressionGeneral{})
 		return
 	}
 
@@ -198,9 +198,39 @@ func GetExpressionInfo(g *gin.Context) {
 	g.JSON(http.StatusOK, expression)
 }
 
+func AllWorkers(g *gin.Context) {
+	workers, err := db.DB().AllWorkers()
+	if err != nil {
+		g.JSON(http.StatusInternalServerError, models.Error{ErrorMessage: err.Error()})
+		return
+	}
+
+	g.JSON(http.StatusOK, workers)
+}
+
+func MainPage(g *gin.Context) {
+	expressions, err := db.DB().AllExpressions()
+	if err != nil {
+		g.JSON(http.StatusInternalServerError, models.Error{ErrorMessage: err.Error()})
+		return
+	}
+
+	workers, err := db.DB().AllWorkers()
+	if err != nil {
+		g.JSON(http.StatusInternalServerError, models.Error{ErrorMessage: err.Error()})
+		return
+	}
+
+	g.HTML(http.StatusOK, "index.tmpl", gin.H{
+		"Expressions": expressions,
+		"Workers":     workers,
+	})
+}
+
 func main() {
 	r := gin.Default()
 	r.SetTrustedProxies(nil)
+	r.LoadHTMLGlob("templates/*")
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	v1 := r.Group("/api/v1")
 	{
@@ -216,9 +246,15 @@ func main() {
 		{
 			worker.GET("/want_to_calculate", ProvideCalculation)
 			worker.POST("/register", WorkerRegistration)
+			worker.GET("/all", AllWorkers)
 		}
 	}
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+
+	ui := r.Group("/")
+	{
+		ui.GET("/", MainPage)
+	}
 
 	go chekingWorkers()
 

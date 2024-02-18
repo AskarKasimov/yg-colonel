@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI</title>
+</head>
+
+<body>
+    <h1>Распределенный вычислитель арифметических выражений</h1>
+    <div style="display: flex; flex-direction: row; gap: 100px;">
+        <div>
+            <h2>Выражения:</h2>
+            {{range .Expressions}}
+            <div style="margin-bottom: 100px;">
+                <p>{{.Vanilla}}</p>
+                <p>Дата поступления: <span class="time">{{.IncomingDate}}</span></p>
+                <p>Статус: {{.Progress}}</p>
+                {{if eq .Progress "processing"}}
+                <p>Исполнитель: {{.WorkerName.String}}</p>
+                {{end}}
+                {{if eq .Progress "done"}}
+                <p>Исполнитель: {{.WorkerName.String}}</p>
+                <p>Ответ: {{.Answer}}</p>
+                {{end}}
+            </div>
+            {{end}}
+        </div>
+        <div>
+            <h2>Исполнители:</h2>
+            {{range .Workers}}
+            <div style="margin-bottom: 100px;">
+                <p>{{.Name}} (#{{.Id}})</p>
+                {{if .IsAlive}}
+                <p>Статус: Работает</p>
+                {{else}}
+                <p>Статус: Не работает</p>
+                {{end}}
+                <p>Последняя связь:<span class="time">{{.LastHeartbeat}}</span></p>
+            </div>
+            {{end}}
+        </div>
+    </div>
+    <script>
+        var time = document.getElementsByClassName("time");
+        for (var i = 0; i < time.length; i++) {
+            var timestamp = time.item(i).innerHTML;
+            time.item(i).innerHTML = new Date(timestamp * 1000).toLocaleString("ru-RU");
+        }
+    </script>
+</body>
+
+</html>
