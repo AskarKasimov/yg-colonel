@@ -211,7 +211,7 @@ func main() {
 		worker := v1.Group("/worker")
 		{
 			worker.GET("/want_to_calculate", ProvideCalculation)
-			worker.POST("/heartbeat", Heartbeat)
+			worker.GET("/heartbeat", Heartbeat)
 			worker.POST("/register", WorkerRegistration)
 		}
 	}
@@ -233,7 +233,7 @@ func chekingWorkers() {
 		workers, err := db.DB().AllAliveWorkers()
 		handleError(err)
 		for _, worker := range workers {
-			if time.Unix(worker.LastHeartbeat, 0).Before(time.Now().Add(-1 * time.Minute)) {
+			if time.Unix(worker.LastHeartbeat, 0).Before(time.Now().Add(-5 * time.Minute)) {
 				log.Println(worker.Name, " IS OFFLINE NOW")
 				err = db.DB().FallAsleep(worker.Id)
 				handleError(err)
@@ -247,6 +247,6 @@ func chekingWorkers() {
 				}
 			}
 		}
-		time.Sleep(1 * time.Minute)
+		time.Sleep(5 * time.Minute)
 	}
 }
