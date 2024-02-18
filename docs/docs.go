@@ -82,29 +82,68 @@ const docTemplate = `{
                 }
             }
         },
-        "/worker/heartbeat": {
+        "/expression/solve": {
             "post": {
-                "tags": [
-                    "worker"
+                "consumes": [
+                    "application/json"
                 ],
-                "summary": "Handling heartbeats",
+                "tags": [
+                    "expression"
+                ],
+                "summary": "Add a solve on expression",
+                "parameters": [
+                    {
+                        "description": "solve of expression",
+                        "name": "solve",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ExpressionSolving"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "id of just created expression",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "incorrect body",
+                        "schema": {
+                            "$ref": "#/definitions/models.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "unprocessed error",
+                        "schema": {
+                            "$ref": "#/definitions/models.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/expression/{id}": {
+            "get": {
+                "tags": [
+                    "expression"
+                ],
+                "summary": "Get info about 1 expression",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Expression ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/models.Expression"
-                        }
-                    },
-                    "400": {
-                        "description": "parsing ID error",
-                        "schema": {
-                            "$ref": "#/definitions/models.Error"
-                        }
-                    },
-                    "404": {
-                        "description": "no worker with such ID",
-                        "schema": {
-                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "500": {
@@ -224,6 +263,21 @@ const docTemplate = `{
             "properties": {
                 "expression": {
                     "type": "string"
+                }
+            }
+        },
+        "models.ExpressionSolving": {
+            "type": "object",
+            "required": [
+                "answer",
+                "id"
+            ],
+            "properties": {
+                "answer": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 }
             }
         }

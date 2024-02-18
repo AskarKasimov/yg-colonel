@@ -20,6 +20,7 @@ type iDatabase interface {
 	GetActiveExpressionsFromWorker(workerId int64) ([]models.Expression, error)
 	MakeExpressionAvailableAgain(expressionId int64) error
 	SolveExpression(workerId, expressionId int64, solution string) error
+	GetExpressionById(expressionId int64) (models.Expression, error)
 }
 
 type database struct {
@@ -93,14 +94,14 @@ func (d *database) GetOneAvailableExpression(workerId int64) (models.Expression,
 func (d *database) AllAliveWorkers() ([]models.Worker, error) {
 	var workers []models.Worker
 
-	rows, err := d.db.Query("SELECT id, extract(epoch from lastHeartbeat)::INT FROM workers WHERE isAlive=true")
+	rows, err := d.db.Query("SELECT id, name, isAlive, extract(epoch from lastHeartbeat)::INT FROM workers WHERE isAlive=true")
 	if err != nil {
 		return []models.Worker{}, err
 	}
 
 	for rows.Next() {
 		var worker models.Worker
-		err = rows.Scan(&worker.Id, &worker.LastHeartbeat)
+		err = rows.Scan(&worker.Id, &worker.Name, &worker.IsAlive, &worker.LastHeartbeat)
 		if err != nil {
 			return []models.Worker{}, err
 		}
@@ -253,4 +254,13 @@ func (d *database) AllExpressions() ([]models.Expression, error) {
 	}
 
 	return expressions, nil
+}
+
+func (d *database) GetExpressionById(expressionId int64) (models.Expression, error) {
+	var expression models.Expression
+	err := d.db.QueryRow("SELECT id, extract(epoch from incomingDate)::INT, vanilla, answer, progress FROM expressions WHERE id=$1", expressionId).Scan(&expression.Id, &expression.IncomingDate, &expression.Vanilla, &expression.Answer, &expression.Progress)
+	if err != nil {
+		return models.Expression{}, err
+	}
+	return expression, nil
 }

@@ -35,7 +35,11 @@ func ProvideCalculation(g *gin.Context) {
 		return
 	}
 
-	isAlive, err := db.DB().IsWorkerAlive(workerId)
+	err = db.DB().WakeUp(workerId)
+	if err != nil {
+		g.JSON(http.StatusInternalServerError, models.Error{ErrorMessage: err.Error()})
+		return
+	}
 
 	if err == sql.ErrNoRows {
 		g.JSON(http.StatusNotFound, models.Error{ErrorMessage: "No worker with such ID. Create it"})
@@ -43,10 +47,6 @@ func ProvideCalculation(g *gin.Context) {
 	}
 	if err != nil {
 		g.JSON(http.StatusInternalServerError, models.Error{ErrorMessage: err.Error()})
-		return
-	}
-	if !isAlive {
-		g.JSON(http.StatusNotFound, models.Error{ErrorMessage: "Worker is not alive! Ensure your heartbeats work"})
 		return
 	}
 
@@ -61,34 +61,6 @@ func ProvideCalculation(g *gin.Context) {
 	}
 
 	g.JSON(http.StatusOK, expression)
-}
-
-// @Summary Handling heartbeats
-// @Tags worker
-// @Success 200 {object} models.Expression
-// @Failure 400 {object} models.Error "parsing ID error"
-// @Failure 404 {object} models.Error "no worker with such ID"
-// @Failure 500 {object} models.Error "unprocessed error"
-// @Router /worker/heartbeat [post]
-func Heartbeat(g *gin.Context) {
-	if len(g.Request.Header["Authorization"]) == 0 {
-		g.JSON(http.StatusBadRequest, models.Error{ErrorMessage: "No Authorization HTTP header"})
-		return
-	}
-
-	workerId, err := strconv.ParseInt(g.Request.Header["Authorization"][0], 10, 64)
-	if err != nil {
-		g.JSON(http.StatusBadRequest, models.Error{ErrorMessage: "Error with parsing ID from Authorization HTTP header"})
-		return
-	}
-
-	err = db.DB().WakeUp(workerId)
-	if err != nil {
-		g.JSON(http.StatusInternalServerError, models.Error{ErrorMessage: err.Error()})
-		return
-	}
-
-	g.JSON(http.StatusOK, "OK")
 }
 
 // @Summary Registrating worker in orchestrator
@@ -122,6 +94,14 @@ func WorkerRegistration(g *gin.Context) {
 	g.JSON(http.StatusOK, createdId)
 }
 
+// @Summary Add a solve on expression
+// @Tags expression
+// @Accept json
+// @Param solve body models.ExpressionSolving true "solve of expression"
+// @Success 200 {string} string "id of just created expression"
+// @Failure 400 {object} models.Error "incorrect body"
+// @Failure 500 {object} models.Error "unprocessed error"
+// @Router /expression/solve [post]
 func SolveExpression(g *gin.Context) {
 	if len(g.Request.Header["Authorization"]) == 0 {
 		g.JSON(http.StatusBadRequest, models.Error{ErrorMessage: "No Authorization HTTP header"})
@@ -196,8 +176,31 @@ func AllExpressions(g *gin.Context) {
 	g.JSON(http.StatusOK, expressions)
 }
 
+// @Summary Get info about 1 expression
+// @Tags expression
+// @Param id path int true "Expression ID"
+// @Success 200 {object} models.Expression
+// @Failure 500 {object} models.Error "unprocessed error"
+// @Router /expression/{id} [get]
+func GetExpressionInfo(g *gin.Context) {
+	expressionId, err := strconv.ParseInt(g.Param("expressionId"), 10, 64)
+	if err != nil {
+		g.JSON(http.StatusInternalServerError, models.Error{ErrorMessage: err.Error()})
+		return
+	}
+
+	expression, err := db.DB().GetExpressionById(expressionId)
+	if err != nil {
+		g.JSON(http.StatusInternalServerError, models.Error{ErrorMessage: err.Error()})
+		return
+	}
+
+	g.JSON(http.StatusOK, expression)
+}
+
 func main() {
 	r := gin.Default()
+	r.SetTrustedProxies(nil)
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	v1 := r.Group("/api/v1")
 	{
@@ -206,12 +209,12 @@ func main() {
 			expression.POST("/add", AddExpression)
 			expression.GET("/all", AllExpressions)
 			expression.POST("/solve", SolveExpression)
+			expression.GET("/:expressionId", GetExpressionInfo)
 		}
 
 		worker := v1.Group("/worker")
 		{
 			worker.GET("/want_to_calculate", ProvideCalculation)
-			worker.GET("/heartbeat", Heartbeat)
 			worker.POST("/register", WorkerRegistration)
 		}
 	}
@@ -234,7 +237,7 @@ func chekingWorkers() {
 		handleError(err)
 		for _, worker := range workers {
 			if time.Unix(worker.LastHeartbeat, 0).Before(time.Now().Add(-5 * time.Minute)) {
-				log.Println(worker.Name, " IS OFFLINE NOW")
+				log.Printf("%s IS OFFLINE NOW", worker.Name)
 				err = db.DB().FallAsleep(worker.Id)
 				handleError(err)
 
