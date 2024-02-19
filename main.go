@@ -132,7 +132,6 @@ func SolveExpression(g *gin.Context) {
 
 // @Summary Add an expression
 // @Tags expression
-// @Accept json
 // @Param expression body models.ExpressionAdding true "expression to calculate"
 // @Success 200 {string} string "id of just created expression"
 // @Failure 400 {object} models.Error "incorrect body"
@@ -140,10 +139,13 @@ func SolveExpression(g *gin.Context) {
 // @Router /expression/add [post]
 func AddExpression(g *gin.Context) {
 	var req models.ExpressionAdding
-
-	if err := g.ShouldBindJSON(&req); err != nil {
-		g.JSON(http.StatusBadRequest, models.Error{ErrorMessage: err.Error()})
-		return
+	err := g.ShouldBind(&req)
+	if err != nil {
+		err2 := g.ShouldBindJSON(&req)
+		if err2 != nil {
+			g.JSON(http.StatusBadRequest, models.Error{ErrorMessage: err.Error()})
+			return
+		}
 	}
 
 	id, err := db.DB().AddExpression(req)

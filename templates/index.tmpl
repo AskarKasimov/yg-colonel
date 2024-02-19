@@ -41,6 +41,14 @@
             </div>
             {{end}}
         </div>
+        <div style="display: flex;flex-direction: column;">
+            <form action="/api/v1/expression/add" method="POST" enctype='application/json'>
+                <input type="text" name="expression" placeholder="2+2*2" />
+                <input type="submit">
+            </form>
+            <p>Чтобы проверить результат, перейдите по ссылке <a
+                    href="http://localhost:8080/api/v1/expression/">http://localhost:8080/api/v1/expression/"выданный_ID"</a></p>
+        </div>
     </div>
     <script>
         var time = document.getElementsByClassName("time");

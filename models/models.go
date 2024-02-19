@@ -7,7 +7,7 @@ type Error struct {
 }
 
 type ExpressionAdding struct {
-	Expression string `json:"expression" binding:"required"`
+	Expression string `json:"expression" form:"expression" binding:"required"`
 }
 
 type ExpressionSolving struct {
