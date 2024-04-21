@@ -195,14 +195,10 @@ func AllExpressions(g *gin.Context) {
 func GetExpressionInfo(g *gin.Context) {
 	userId, exists := g.Get("userId")
 	if !exists {
-		g.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"reason": "Проблемы с токеном"})
+		g.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"reason": "Проблемы с токеном3"})
 		return
 	}
-	userUuid, err := uuid.Parse(userId.(string))
-	if err != nil {
-		g.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"reason": "Проблемы с токеном"})
-		return
-	}
+	userUuid := userId.(uuid.UUID)
 
 	expressionId, err := uuid.Parse(g.Param("expressionId"))
 	if err != nil {
@@ -327,14 +323,13 @@ func Login(g *gin.Context) {
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// defer func() {
-		// 	// recover from panic if one occurred. Set err to nil otherwise.
-		// 	if recover() != nil {
-		// 		log.Println(recover())
-		// 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"reason": "Токена нет"})
-		// 		return
-		// 	}
-		// }()
+		defer func() {
+			// recover from panic if one occurred. Set err to nil otherwise.
+			if recover() != nil {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"reason": "Токена нет1"})
+				return
+			}
+		}()
 
 		authorization := c.Request.Header["Authorization"][0]
 
