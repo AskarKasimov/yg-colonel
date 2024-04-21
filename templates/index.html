@@ -31,7 +31,8 @@
             <h2>Исполнители:</h2>
             {{range .Workers}}
             <div style="margin-bottom: 100px;">
-                <p>{{.Name}} (#{{.Id}})</p>
+                <p>{{.Name}}</p>
+                <p>Количество горутин: {{.NumberOfGoroutines}}</p>
                 {{if .IsAlive}}
                 <p>Статус: Работает</p>
                 {{else}}
@@ -47,14 +48,15 @@
                 <input type="submit">
             </form>
             <p>Чтобы проверить результат, перейдите по ссылке <a
-                    href="http://localhost:8080/api/v1/expression/">http://localhost:8080/api/v1/expression/"выданный_ID"</a></p>
+                    href="http://localhost:8080/api/v1/expression/">http://localhost:8080/api/v1/expression/"выданный_ID"</a>
+            </p>
         </div>
     </div>
     <script>
         var time = document.getElementsByClassName("time");
         for (var i = 0; i < time.length; i++) {
             var timestamp = time.item(i).innerHTML;
-            time.item(i).innerHTML = new Date(timestamp * 1000).toLocaleString("ru-RU");
+            time.item(i).innerHTML = " " + new Date(timestamp * 1000).toLocaleString("ru-RU");
         }
     </script>
 </body>

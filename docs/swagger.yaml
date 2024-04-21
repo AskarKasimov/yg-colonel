@@ -10,7 +10,7 @@ definitions:
       answer:
         type: string
       id:
-        type: integer
+        type: string
       incomingDate:
         type: integer
       progress:
@@ -30,7 +30,7 @@ definitions:
       answer:
         type: string
       id:
-        type: integer
+        type: string
     required:
     - answer
     - id
@@ -60,8 +60,6 @@ paths:
       - expression
   /expression/add:
     post:
-      consumes:
-      - application/json
       parameters:
       - description: expression to calculate
         in: body
@@ -163,7 +161,7 @@ paths:
           schema:
             $ref: '#/definitions/models.Expression'
         "404":
-          description: no rows now
+          description: no rows now OR no such worker id
           schema:
             $ref: '#/definitions/models.Error'
         "500":

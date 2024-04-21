@@ -4,13 +4,13 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/askarkasimov/yg-colonel/db"
 	docs "github.com/askarkasimov/yg-colonel/docs"
 	models "github.com/askarkasimov/yg-colonel/models"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -20,7 +20,7 @@ import (
 // @Summary One available expression for worker
 // @Tags worker
 // @Success 200 {object} models.Expression
-// @Failure 404 {object} models.Error "no rows now"
+// @Failure 404 {object} models.Error "no rows now OR no such worker id"
 // @Failure 500 {object} models.Error "unprocessed error"
 // @Router /worker/want_to_calculate [get]
 func ProvideCalculation(g *gin.Context) {
@@ -29,24 +29,20 @@ func ProvideCalculation(g *gin.Context) {
 		return
 	}
 
-	workerId, err := strconv.ParseInt(g.Request.Header["Authorization"][0], 10, 64)
+	workerId, err := uuid.Parse(g.Request.Header["Authorization"][0])
 	if err != nil {
-		g.JSON(http.StatusBadRequest, models.Error{ErrorMessage: "Error with parsing ID from Authorization HTTP header"})
+		g.JSON(http.StatusBadRequest, models.Error{ErrorMessage: "Not valid UUID"})
 		return
 	}
 
 	err = db.DB().WakeUp(workerId)
 	if err != nil {
-		g.JSON(http.StatusInternalServerError, models.Error{ErrorMessage: err.Error()})
+		g.JSON(http.StatusNotFound, models.Error{ErrorMessage: err.Error()})
 		return
 	}
 
 	if err == sql.ErrNoRows {
 		g.JSON(http.StatusNotFound, models.Error{ErrorMessage: "No worker with such ID. Create it"})
-		return
-	}
-	if err != nil {
-		g.JSON(http.StatusInternalServerError, models.Error{ErrorMessage: err.Error()})
 		return
 	}
 
@@ -79,14 +75,14 @@ func WorkerRegistration(g *gin.Context) {
 		return
 	}
 
-	id, _ := db.DB().GetWorkerIdByName(worker.Name)
+	id, err := db.DB().GetWorkerIdByName(worker.Name)
 
-	if id != 0 {
+	if err == nil {
 		g.JSON(http.StatusOK, id)
 		return
 	}
 
-	createdId, err := db.DB().NewWorker(worker.Name)
+	createdId, err := db.DB().NewWorker(worker.Name, worker.NumberOfGoroutines)
 	if err != nil {
 		g.JSON(http.StatusInternalServerError, models.Error{ErrorMessage: err.Error()})
 		return
@@ -108,9 +104,9 @@ func SolveExpression(g *gin.Context) {
 		return
 	}
 
-	workerId, err := strconv.ParseInt(g.Request.Header["Authorization"][0], 10, 64)
+	workerId, err := uuid.Parse(g.Request.Header["Authorization"][0])
 	if err != nil {
-		g.JSON(http.StatusBadRequest, models.Error{ErrorMessage: "Error with parsing ID from Authorization HTTP header"})
+		g.JSON(http.StatusBadRequest, models.Error{ErrorMessage: "Not valid UUID"})
 		return
 	}
 
@@ -185,9 +181,9 @@ func AllExpressions(g *gin.Context) {
 // @Failure 500 {object} models.Error "unprocessed error"
 // @Router /expression/{id} [get]
 func GetExpressionInfo(g *gin.Context) {
-	expressionId, err := strconv.ParseInt(g.Param("expressionId"), 10, 64)
+	expressionId, err := uuid.Parse(g.Param("expressionId"))
 	if err != nil {
-		g.JSON(http.StatusInternalServerError, models.Error{ErrorMessage: err.Error()})
+		g.JSON(http.StatusBadRequest, models.Error{ErrorMessage: "Not valid UUID"})
 		return
 	}
 
@@ -223,13 +219,14 @@ func MainPage(g *gin.Context) {
 		return
 	}
 
-	g.HTML(http.StatusOK, "index.tmpl", gin.H{
+	g.HTML(http.StatusOK, "index.html", gin.H{
 		"Expressions": expressions,
 		"Workers":     workers,
 	})
 }
 
 func main() {
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	r.SetTrustedProxies(nil)
 	r.LoadHTMLGlob("templates/*")
@@ -274,7 +271,7 @@ func chekingWorkers() {
 		workers, err := db.DB().AllAliveWorkers()
 		handleError(err)
 		for _, worker := range workers {
-			if time.Unix(worker.LastHeartbeat, 0).Before(time.Now().Add(-5 * time.Minute)) {
+			if time.Unix(worker.LastHeartbeat, 0).Before(time.Now().Add(-3 * time.Minute)) {
 				log.Printf("%s IS OFFLINE NOW", worker.Name)
 				err = db.DB().FallAsleep(worker.Id)
 				handleError(err)
@@ -288,6 +285,6 @@ func chekingWorkers() {
 				}
 			}
 		}
-		time.Sleep(5 * time.Minute)
+		time.Sleep(2 * time.Minute)
 	}
 }

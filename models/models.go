@@ -1,6 +1,10 @@
 package models
 
-import "database/sql"
+import (
+	"database/sql"
+
+	"github.com/google/uuid"
+)
 
 type Error struct {
 	ErrorMessage string `json:"errorMessage"`
@@ -11,20 +15,20 @@ type ExpressionAdding struct {
 }
 
 type ExpressionSolving struct {
-	Id     int64  `json:"id" binding:"required"`
-	Answer string `json:"answer" binding:"required"`
+	Id     uuid.UUID `json:"id" binding:"required"`
+	Answer string    `json:"answer" binding:"required"`
 }
 
 type Expression struct {
-	Id           int64  `json:"id"`
-	IncomingDate int64  `json:"incomingDate"`
-	Vanilla      string `json:"vanilla"`
-	Answer       string `json:"answer"`
-	Progress     string `json:"progress"`
+	Id           uuid.UUID `json:"id"`
+	IncomingDate int64     `json:"incomingDate"`
+	Vanilla      string    `json:"vanilla"`
+	Answer       string    `json:"answer"`
+	Progress     string    `json:"progress"`
 }
 
 type ExpressionGeneral struct {
-	Id           int64          `json:"id"`
+	Id           uuid.UUID      `json:"id"`
 	IncomingDate int64          `json:"incomingDate"`
 	Vanilla      string         `json:"vanilla"`
 	Answer       string         `json:"answer"`
@@ -33,12 +37,14 @@ type ExpressionGeneral struct {
 }
 
 type WorkerAdding struct {
-	Name string `json:"name" binding:"required"`
+	Name               string `json:"name" binding:"required"`
+	NumberOfGoroutines int    `json:"number_of_goroutines"`
 }
 
 type Worker struct {
-	Id            int64  `json:"id"`
-	Name          string `json:"name"`
-	IsAlive       bool   `json:"isAlive"`
-	LastHeartbeat int64  `json:"lastHeartbeat"`
+	Id                 uuid.UUID `json:"id"`
+	Name               string    `json:"name"`
+	NumberOfGoroutines int       `json:"number_of_goroutines"`
+	IsAlive            bool      `json:"isAlive"`
+	LastHeartbeat      int64     `json:"lastHeartbeat"`
 }

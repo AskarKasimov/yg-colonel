@@ -17,9 +17,6 @@ const docTemplate = `{
     "paths": {
         "/expression/add": {
             "post": {
-                "consumes": [
-                    "application/json"
-                ],
                 "tags": [
                     "expression"
                 ],
@@ -211,7 +208,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "no rows now",
+                        "description": "no rows now OR no such worker id",
                         "schema": {
                             "$ref": "#/definitions/models.Error"
                         }
@@ -242,7 +239,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "incomingDate": {
                     "type": "integer"
@@ -277,7 +274,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 }
             }
         }

@@ -7,9 +7,6 @@
     "paths": {
         "/expression/add": {
             "post": {
-                "consumes": [
-                    "application/json"
-                ],
                 "tags": [
                     "expression"
                 ],
@@ -201,7 +198,7 @@
                         }
                     },
                     "404": {
-                        "description": "no rows now",
+                        "description": "no rows now OR no such worker id",
                         "schema": {
                             "$ref": "#/definitions/models.Error"
                         }
@@ -232,7 +229,7 @@
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "incomingDate": {
                     "type": "integer"
@@ -267,7 +264,7 @@
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 }
             }
         }

@@ -8,8 +8,6 @@ services:
             - POSTGRES_PASSWORD=admin
         volumes:
             - ./init-sql:/docker-entrypoint-initdb.d
-        ports:
-            - "5432:5432"
         networks:
             - yg
     colonel:
