@@ -11,7 +11,7 @@ import (
 
 type iDatabase interface {
 	GetOneAvailableExpression(workerId uuid.UUID) (models.Expression, error)
-	AddExpression(e models.ExpressionAdding) (uuid.UUID, error)
+	AddExpression(e models.ExpressionAdding, userId uuid.UUID) (uuid.UUID, error)
 	AllExpressions() ([]models.ExpressionGeneral, error)
 	IsWorkerAlive(workerId uuid.UUID) (bool, error)
 	WakeUp(workerId uuid.UUID) error
@@ -22,8 +22,10 @@ type iDatabase interface {
 	GetActiveExpressionsFromWorker(workerId uuid.UUID) ([]models.Expression, error)
 	MakeExpressionAvailableAgain(expressionId uuid.UUID) error
 	SolveExpression(workerId, expressionId uuid.UUID, solution string) error
-	GetExpressionById(expressionId uuid.UUID) (models.Expression, error)
+	GetExpressionById(expressionId uuid.UUID, userId uuid.UUID) (models.Expression, error)
 	AllWorkers() ([]models.Worker, error)
+	RegisterNewUser(newUser models.User) error
+	AuthorizeUser(auth models.User) (models.User, error)
 }
 
 type database struct {
@@ -44,13 +46,38 @@ func init() {
 	db = &database{db: newConn}
 }
 
+func (db *database) RegisterNewUser(newUser models.User) error {
+	_, err := db.db.Exec("INSERT INTO users (login, passwordHash) VALUES ($1, $2)", newUser.Login, newUser.Password)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *database) AuthorizeUser(auth models.User) (models.User, error) {
+	var user models.User
+
+	err := db.db.QueryRow("SELECT id, passwordHash FROM users WHERE login=$1", auth.Login).Scan(&user.Id, &user.Password)
+	if err != nil {
+		return models.User{}, err
+	}
+
+	return user, nil
+}
+
 // adding expression into DB and giving its id back
-func (d *database) AddExpression(e models.ExpressionAdding) (uuid.UUID, error) {
+func (d *database) AddExpression(e models.ExpressionAdding, userId uuid.UUID) (uuid.UUID, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	var id uuid.UUID
 	err := d.db.QueryRow("INSERT INTO expressions (vanilla) VALUES ($1) RETURNING id", e.Expression).Scan(&id)
 	if err != nil {
+		return uuid.UUID{}, err
+	}
+	ex, err := d.db.Exec("INSERT INTO users_and_expressions (userId, expressionId) VALUES ($1, $2)", userId, id)
+	rowsAffected, err := ex.RowsAffected()
+	if err != nil || rowsAffected == 0 {
 		return uuid.UUID{}, err
 	}
 
@@ -284,11 +311,11 @@ func (d *database) AllExpressions() ([]models.ExpressionGeneral, error) {
 	return expressions, nil
 }
 
-func (d *database) GetExpressionById(expressionId uuid.UUID) (models.Expression, error) {
+func (d *database) GetExpressionById(expressionId uuid.UUID, userId uuid.UUID) (models.Expression, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	var expression models.Expression
-	err := d.db.QueryRow("SELECT id, extract(epoch from incomingDate)::INT, vanilla, answer, progress FROM expressions WHERE id=$1", expressionId).Scan(&expression.Id, &expression.IncomingDate, &expression.Vanilla, &expression.Answer, &expression.Progress)
+	err := d.db.QueryRow("SELECT id, extract(epoch from incomingDate)::INT, vanilla, answer, progress FROM expressions JOIN users_and_expressions ON expressionId=id WHERE id=$1 AND userId=$2", expressionId, userId).Scan(&expression.Id, &expression.IncomingDate, &expression.Vanilla, &expression.Answer, &expression.Progress)
 	if err != nil {
 		return models.Expression{}, err
 	}

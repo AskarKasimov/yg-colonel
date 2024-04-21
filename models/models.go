@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
@@ -47,4 +48,15 @@ type Worker struct {
 	NumberOfGoroutines int       `json:"number_of_goroutines"`
 	IsAlive            bool      `json:"isAlive"`
 	LastHeartbeat      int64     `json:"lastHeartbeat"`
+}
+
+type JWT struct {
+	UserId uuid.UUID `json:"id"`
+	jwt.RegisteredClaims
+}
+
+type User struct {
+	Id       uuid.UUID `json:"id"`
+	Login    string    `json:"login"`
+	Password string    `json:"password"`
 }

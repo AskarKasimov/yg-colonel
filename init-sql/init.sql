@@ -22,7 +22,7 @@ CREATE TABLE workers_and_expressions (
 );
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    login TEXT NOT NULL,
+    login TEXT UNIQUE NOT NULL,
     passwordHash TEXT NOT NULL
 );
 CREATE TABLE users_and_expressions (
